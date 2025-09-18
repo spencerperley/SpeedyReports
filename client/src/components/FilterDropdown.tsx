@@ -73,7 +73,7 @@ export function FilterDropdown({
             <ChevronDown className="h-4 w-4 shrink-0" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-full p-0" align="start">
+        <PopoverContent className="w-full p-0 text-foreground" align="start">
           <div className="p-3 border-b">
             <div className="relative">
               <Search className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
@@ -123,7 +123,7 @@ export function FilterDropdown({
                   />
                   <label 
                     htmlFor={`${label}-${option}`}
-                    className="text-sm cursor-pointer flex-1"
+                    className="text-sm cursor-pointer flex-1 text-foreground"
                   >
                     {option}
                   </label>

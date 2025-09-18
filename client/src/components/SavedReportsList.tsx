@@ -8,6 +8,7 @@ interface SavedReport {
   id: string;
   name: string;
   dateCreated: string;
+  createdBy: string;
   dateRange: {
     start: string;
     end: string;
@@ -20,6 +21,7 @@ interface SavedReport {
 
 interface SavedReportsListProps {
   reports: SavedReport[];
+  currentUserEmail: string;
   onDeleteReport: (reportId: string) => void;
   onLoadReport: (report: SavedReport) => void;
   className?: string;
@@ -27,6 +29,7 @@ interface SavedReportsListProps {
 
 export function SavedReportsList({
   reports,
+  currentUserEmail,
   onDeleteReport,
   onLoadReport,
   className = ""
@@ -55,6 +58,71 @@ export function SavedReportsList({
     });
   };
 
+  // Split reports into "My Reports" and "Other"
+  const myReports = reports.filter(report => report.createdBy === currentUserEmail);
+  const otherReports = reports.filter(report => report.createdBy !== currentUserEmail);
+
+  const renderReportSection = (sectionReports: SavedReport[], title: string, startIndex: number = 0) => (
+    <div className="mb-4">
+      <h3 className="text-sm font-semibold text-foreground mb-2 px-4">{title}</h3>
+      {sectionReports.length === 0 ? (
+        <div className="p-4 text-center text-muted-foreground">
+          <p className="text-xs">No reports in this section</p>
+        </div>
+      ) : (
+        <div className="space-y-0">
+          {sectionReports.map((report, index) => (
+            <div key={report.id}>
+              <div
+                className={`p-4 hover-elevate cursor-pointer transition-colors ${
+                  selectedReportId === report.id ? 'bg-accent' : ''
+                }`}
+                onClick={() => handleLoadReport(report)}
+                data-testid={`report-item-${report.id}`}
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex-1 min-w-0">
+                    <h4 className="text-sm font-medium text-foreground truncate">
+                      {report.name}
+                    </h4>
+                    <div className="flex items-center gap-1 mt-1">
+                      <Calendar className="h-3 w-3 text-muted-foreground" />
+                      <span className="text-xs text-muted-foreground">
+                        {formatDate(report.dateRange.start)} - {formatDate(report.dateRange.end)}
+                      </span>
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      Created by: {report.createdBy}
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      Created: {formatDate(report.dateCreated)}
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      {report.outlets.length} outlets, {report.suppliers.length} suppliers
+                    </div>
+                  </div>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteReport(report.id, report.name);
+                    }}
+                    className="h-8 w-8 text-destructive hover:text-destructive"
+                    data-testid={`button-delete-report-${report.id}`}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+              {index < sectionReports.length - 1 && <Separator />}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <Card className={className}>
       <CardHeader>
@@ -72,50 +140,9 @@ export function SavedReportsList({
           </div>
         ) : (
           <div className="max-h-96 overflow-y-auto">
-            {reports.map((report, index) => (
-              <div key={report.id}>
-                <div
-                  className={`p-4 hover-elevate cursor-pointer transition-colors ${
-                    selectedReportId === report.id ? 'bg-accent' : ''
-                  }`}
-                  onClick={() => handleLoadReport(report)}
-                  data-testid={`report-item-${report.id}`}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1 min-w-0">
-                      <h4 className="text-sm font-medium text-foreground truncate">
-                        {report.name}
-                      </h4>
-                      <div className="flex items-center gap-1 mt-1">
-                        <Calendar className="h-3 w-3 text-muted-foreground" />
-                        <span className="text-xs text-muted-foreground">
-                          {formatDate(report.dateRange.start)} - {formatDate(report.dateRange.end)}
-                        </span>
-                      </div>
-                      <div className="text-xs text-muted-foreground mt-1">
-                        Created: {formatDate(report.dateCreated)}
-                      </div>
-                      <div className="text-xs text-muted-foreground mt-1">
-                        {report.outlets.length} outlets, {report.suppliers.length} suppliers
-                      </div>
-                    </div>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteReport(report.id, report.name);
-                      }}
-                      className="h-8 w-8 text-destructive hover:text-destructive"
-                      data-testid={`button-delete-report-${report.id}`}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-                {index < reports.length - 1 && <Separator />}
-              </div>
-            ))}
+            {renderReportSection(myReports, "My Reports")}
+            {myReports.length > 0 && otherReports.length > 0 && <Separator className="my-4" />}
+            {renderReportSection(otherReports, "Other")}
           </div>
         )}
       </CardContent>

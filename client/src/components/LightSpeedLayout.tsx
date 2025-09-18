@@ -18,6 +18,7 @@ interface SavedReport {
   id: string;
   name: string;
   dateCreated: string;
+  createdBy: string;
   dateRange: {
     start: string;
     end: string;
@@ -36,6 +37,7 @@ export function LightSpeedLayout() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [currentReportData, setCurrentReportData] = useState<Partial<ReportData>>({});
+  const [currentUserEmail, setCurrentUserEmail] = useState('user@example.com');
 
   // Dark mode toggle
   useEffect(() => {
@@ -74,6 +76,7 @@ export function LightSpeedLayout() {
         id: "1",
         name: "Q4 Purchase Orders",
         dateCreated: "2024-01-15",
+        createdBy: "user@example.com",
         dateRange: { start: "2024-10-01", end: "2024-12-31" },
         outlets: ["Ute Mountaineer", "Neptune"],
         suppliers: ["ABC Electronics Ltd", "TechCorp Solutions"],
@@ -84,11 +87,23 @@ export function LightSpeedLayout() {
         id: "2",
         name: "Monthly Electronics Report", 
         dateCreated: "2024-01-10",
+        createdBy: "manager@company.com",
         dateRange: { start: "2024-01-01", end: "2024-01-31" },
         outlets: ["Ute Mountaineer"],
         suppliers: ["Global Components Inc"],
         categories: ["Electronics"],
         includeNonzeroOnly: false
+      },
+      {
+        id: "3",
+        name: "Annual Summary",
+        dateCreated: "2024-01-08",
+        createdBy: "other@company.com",
+        dateRange: { start: "2024-01-01", end: "2024-12-31" },
+        outlets: ["Ute Mountaineer", "Neptune"],
+        suppliers: ["ABC Electronics Ltd", "Prime Manufacturing"],
+        categories: ["Electronics", "Materials"],
+        includeNonzeroOnly: true
       }
     ];
 
@@ -147,6 +162,7 @@ export function LightSpeedLayout() {
           id: Date.now().toString(),
           name: data.reportName,
           dateCreated: new Date().toISOString().split('T')[0],
+          createdBy: currentUserEmail,
           dateRange: {
             start: data.startDate,
             end: data.endDate
@@ -203,14 +219,34 @@ export function LightSpeedLayout() {
           <h1 className="text-2xl font-bold text-foreground">
             Light Speed Order Manager
           </h1>
-          <Button
-            size="icon"
-            variant="ghost"
-            onClick={toggleDarkMode}
-            data-testid="button-theme-toggle"
-          >
-            {darkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-          </Button>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium text-foreground" htmlFor="user-email">
+                Current User Email*:
+              </label>
+              <input
+                id="user-email"
+                type="email"
+                value={currentUserEmail}
+                onChange={(e) => {
+                  setCurrentUserEmail(e.target.value);
+                  console.log('User email changed:', e.target.value);
+                }}
+                className="px-3 py-1 text-sm border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                placeholder="Enter email..."
+                data-testid="input-user-email"
+              />
+              <span className="text-xs text-muted-foreground">*Will be derived from Google auth</span>
+            </div>
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={toggleDarkMode}
+              data-testid="button-theme-toggle"
+            >
+              {darkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -234,6 +270,7 @@ export function LightSpeedLayout() {
           <div className="p-4">
             <SavedReportsList
               reports={savedReports}
+              currentUserEmail={currentUserEmail}
               onDeleteReport={handleDeleteReport}
               onLoadReport={handleLoadReport}
             />

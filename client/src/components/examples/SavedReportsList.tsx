@@ -8,6 +8,7 @@ export default function SavedReportsListExample() {
       id: "1",
       name: "Q4 Purchase Orders",
       dateCreated: "2024-01-15",
+      createdBy: "user@example.com",
       dateRange: {
         start: "2024-10-01",
         end: "2024-12-31"
@@ -21,6 +22,7 @@ export default function SavedReportsListExample() {
       id: "2", 
       name: "Monthly Electronics Report",
       dateCreated: "2024-01-10",
+      createdBy: "other@example.com",
       dateRange: {
         start: "2024-01-01",
         end: "2024-01-31"
@@ -34,6 +36,7 @@ export default function SavedReportsListExample() {
       id: "3",
       name: "All Suppliers Overview",
       dateCreated: "2024-01-05",
+      createdBy: "user@example.com",
       dateRange: {
         start: "2024-01-01", 
         end: "2024-12-31"
@@ -57,6 +60,7 @@ export default function SavedReportsListExample() {
     <div className="w-80 h-96">
       <SavedReportsList
         reports={mockReports}
+        currentUserEmail="user@example.com"
         onDeleteReport={handleDeleteReport}
         onLoadReport={handleLoadReport}
       />
