@@ -3,6 +3,8 @@ import { Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ReportForm } from "./ReportForm";
 import { SavedReportsList } from "./SavedReportsList";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient";
 
 interface ReportData {
   reportName: string;
@@ -31,13 +33,28 @@ interface SavedReport {
 
 export function LightSpeedLayout() {
   const [darkMode, setDarkMode] = useState(false);
-  const [suppliers, setSuppliers] = useState<string[]>([]);
-  const [categories, setCategories] = useState<string[]>([]);
-  const [savedReports, setSavedReports] = useState<SavedReport[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [currentReportData, setCurrentReportData] = useState<Partial<ReportData>>({});
   const [currentUserEmail, setCurrentUserEmail] = useState('user@example.com');
+
+  // Fetch suppliers from API
+  const { data: suppliers = [], isLoading: suppliersLoading } = useQuery({
+    queryKey: ['/api/suppliers'],
+    queryFn: () => fetch('http://localhost:3000/api/suppliers').then(res => res.json())
+  });
+
+  // Fetch categories from API
+  const { data: categories = [], isLoading: categoriesLoading } = useQuery({
+    queryKey: ['/api/categories'],
+    queryFn: () => fetch('http://localhost:3000/api/categories').then(res => res.json())
+  });
+
+  // Fetch saved reports from API
+  const { data: savedReports = [], isLoading: reportsLoading, refetch: refetchReports } = useQuery({
+    queryKey: ['/api/saved_reports'],
+    queryFn: () => fetch('http://localhost:3000/api/saved_reports').then(res => res.json())
+  });
 
   // Dark mode toggle
   useEffect(() => {
@@ -54,147 +71,76 @@ export function LightSpeedLayout() {
     console.log('Dark mode toggled:', newDarkMode);
   };
 
-  // Mock data for demo //todo: remove mock functionality
-  useEffect(() => {
-    // Simulate fetching suppliers and categories
-    const mockSuppliers = [
-      "ABC Electronics Ltd", "TechCorp Solutions", "Global Components Inc",
-      "Prime Manufacturing", "Advanced Systems Co", "MegaTech Industries",
-      "Universal Supplies", "Quality Parts Ltd", "NextGen Materials", 
-      "Superior Components", "Elite Manufacturing", "ProTech Solutions",
-      "Innovative Systems", "Alpha Components", "Beta Electronics"
-    ];
-    
-    const mockCategories = [
-      "Electronics", "Components", "Materials", "Hardware", "Software",
-      "Tools", "Equipment", "Supplies", "Parts", "Accessories", 
-      "Machinery", "Instruments", "Cables", "Connectors"
-    ];
-
-    const mockSavedReports = [
-      {
-        id: "1",
-        name: "Q4 Purchase Orders",
-        dateCreated: "2024-01-15",
-        createdBy: "user@example.com",
-        dateRange: { start: "2024-10-01", end: "2024-12-31" },
-        outlets: ["Ute Mountaineer", "Neptune"],
-        suppliers: ["ABC Electronics Ltd", "TechCorp Solutions"],
-        categories: ["Electronics", "Components"],
-        includeNonzeroOnly: true
-      },
-      {
-        id: "2",
-        name: "Monthly Electronics Report", 
-        dateCreated: "2024-01-10",
-        createdBy: "manager@company.com",
-        dateRange: { start: "2024-01-01", end: "2024-01-31" },
-        outlets: ["Ute Mountaineer"],
-        suppliers: ["Global Components Inc"],
-        categories: ["Electronics"],
-        includeNonzeroOnly: false
-      },
-      {
-        id: "3",
-        name: "Annual Summary",
-        dateCreated: "2024-01-08",
-        createdBy: "other@company.com",
-        dateRange: { start: "2024-01-01", end: "2024-12-31" },
-        outlets: ["Ute Mountaineer", "Neptune"],
-        suppliers: ["ABC Electronics Ltd", "Prime Manufacturing"],
-        categories: ["Electronics", "Materials"],
-        includeNonzeroOnly: true
-      }
-    ];
-
-    setSuppliers(mockSuppliers);
-    setCategories(mockCategories);
-    setSavedReports(mockSavedReports);
-  }, []);
-
-  const handleGenerateReport = async (data: ReportData) => {
-    setIsGenerating(true);
-    console.log('Generating report with data:', data);
-    
-    try {
-      // TODO: Replace with actual API call
-      // const response = await fetch('/api/generate-report', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(data)
-      // });
-      // Simulate CSV download
-      setTimeout(() => {
-        setIsGenerating(false);
-        console.log('Report generated and downloaded successfully');
-        // Simulate file download trigger
-        const link = document.createElement('a');
-        link.href = 'data:text/csv;charset=utf-8,Report%20Name,Date%20Range,Outlets%0A' + 
-                   encodeURIComponent(data.reportName) + ',' + 
-                   data.startDate + '%20to%20' + data.endDate + ',' +
-                   data.selectedOutlets.join('%3B');
-        link.download = `${data.reportName.replace(/[^a-zA-Z0-9]/g, '_')}.csv`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      }, 2000);
-    } catch (error) {
-      setIsGenerating(false);
+  // Generate report mutation
+  const generateReportMutation = useMutation({
+    mutationFn: (data: ReportData) => 
+      fetch('http://localhost:3000/api/generate_report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      }).then(res => res.blob()),
+    onSuccess: (blob, data) => {
+      // Create download link for CSV
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${data.reportName.replace(/[^a-zA-Z0-9]/g, '_')}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      console.log('Report generated and downloaded successfully');
+    },
+    onError: (error) => {
       console.error('Error generating report:', error);
     }
+  });
+
+  // Save report mutation
+  const saveReportMutation = useMutation({
+    mutationFn: (data: ReportData & { createdBy: string }) => 
+      fetch('http://localhost:3000/api/save_report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      }).then(res => res.json()),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/saved_reports'] });
+      console.log('Report saved successfully');
+    },
+    onError: (error) => {
+      console.error('Error saving report:', error);
+    }
+  });
+
+  // Delete report mutation
+  const deleteReportMutation = useMutation({
+    mutationFn: (reportId: string) => 
+      fetch(`http://localhost:3000/api/delete_report/${reportId}`, {
+        method: 'DELETE'
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/saved_reports'] });
+      console.log('Report deleted successfully');
+    },
+    onError: (error) => {
+      console.error('Error deleting report:', error);
+    }
+  });
+
+  const handleGenerateReport = async (data: ReportData) => {
+    console.log('Generating report with data:', data);
+    generateReportMutation.mutate(data);
   };
 
   const handleSaveReport = async (data: ReportData) => {
-    setIsSaving(true);
     console.log('Saving report with data:', data);
-    
-    try {
-      // TODO: Replace with actual API call
-      // const response = await fetch('/api/save-report', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(data)
-      // });
-      
-      // Simulate API response
-      setTimeout(() => {
-        const newReport: SavedReport = {
-          id: Date.now().toString(),
-          name: data.reportName,
-          dateCreated: new Date().toISOString().split('T')[0],
-          createdBy: currentUserEmail,
-          dateRange: {
-            start: data.startDate,
-            end: data.endDate
-          },
-          outlets: data.selectedOutlets,
-          suppliers: data.selectedSuppliers,
-          categories: data.selectedCategories,
-          includeNonzeroOnly: data.includeNonzeroOnly
-        };
-        
-        setSavedReports(prev => [newReport, ...prev]);
-        setIsSaving(false);
-        console.log('Report saved successfully');
-      }, 1000);
-    } catch (error) {
-      setIsSaving(false);
-      console.error('Error saving report:', error);
-    }
+    saveReportMutation.mutate({ ...data, createdBy: currentUserEmail });
   };
 
   const handleDeleteReport = async (reportId: string) => {
     console.log('Deleting report:', reportId);
-    
-    try {
-      // TODO: Replace with actual API call
-      // await fetch(`/api/delete-report/${reportId}`, { method: 'DELETE' });
-      
-      setSavedReports(prev => prev.filter(r => r.id !== reportId));
-      console.log('Report deleted successfully');
-    } catch (error) {
-      console.error('Error deleting report:', error);
-    }
+    deleteReportMutation.mutate(reportId);
   };
 
   const handleLoadReport = (report: SavedReport) => {
@@ -260,8 +206,8 @@ export function LightSpeedLayout() {
             onGenerateReport={handleGenerateReport}
             onSaveReport={handleSaveReport}
             initialData={currentReportData}
-            isGenerating={isGenerating}
-            isSaving={isSaving}
+            isGenerating={generateReportMutation.isPending}
+            isSaving={saveReportMutation.isPending}
           />
         </main>
 
