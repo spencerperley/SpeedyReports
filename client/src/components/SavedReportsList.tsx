@@ -1,0 +1,124 @@
+import { useState } from "react";
+import { Trash2, FileText, Calendar } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+
+interface SavedReport {
+  id: string;
+  name: string;
+  dateCreated: string;
+  dateRange: {
+    start: string;
+    end: string;
+  };
+  outlets: string[];
+  suppliers: string[];
+  categories: string[];
+  includeNonzeroOnly: boolean;
+}
+
+interface SavedReportsListProps {
+  reports: SavedReport[];
+  onDeleteReport: (reportId: string) => void;
+  onLoadReport: (report: SavedReport) => void;
+  className?: string;
+}
+
+export function SavedReportsList({
+  reports,
+  onDeleteReport,
+  onLoadReport,
+  className = ""
+}: SavedReportsListProps) {
+  const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
+
+  const handleLoadReport = (report: SavedReport) => {
+    setSelectedReportId(report.id);
+    onLoadReport(report);
+    console.log('Report loaded:', report.name);
+  };
+
+  const handleDeleteReport = (reportId: string, reportName: string) => {
+    onDeleteReport(reportId);
+    console.log('Report deleted:', reportName);
+    if (selectedReportId === reportId) {
+      setSelectedReportId(null);
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    });
+  };
+
+  return (
+    <Card className={className}>
+      <CardHeader>
+        <CardTitle className="text-lg font-semibold flex items-center gap-2">
+          <FileText className="h-5 w-5" />
+          Saved Reports
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="p-0">
+        {reports.length === 0 ? (
+          <div className="p-6 text-center text-muted-foreground">
+            <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
+            <p className="text-sm">No saved reports yet</p>
+            <p className="text-xs mt-1">Create your first report to see it here</p>
+          </div>
+        ) : (
+          <div className="max-h-96 overflow-y-auto">
+            {reports.map((report, index) => (
+              <div key={report.id}>
+                <div
+                  className={`p-4 hover-elevate cursor-pointer transition-colors ${
+                    selectedReportId === report.id ? 'bg-accent' : ''
+                  }`}
+                  onClick={() => handleLoadReport(report)}
+                  data-testid={`report-item-${report.id}`}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-sm font-medium text-foreground truncate">
+                        {report.name}
+                      </h4>
+                      <div className="flex items-center gap-1 mt-1">
+                        <Calendar className="h-3 w-3 text-muted-foreground" />
+                        <span className="text-xs text-muted-foreground">
+                          {formatDate(report.dateRange.start)} - {formatDate(report.dateRange.end)}
+                        </span>
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        Created: {formatDate(report.dateCreated)}
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        {report.outlets.length} outlets, {report.suppliers.length} suppliers
+                      </div>
+                    </div>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteReport(report.id, report.name);
+                      }}
+                      className="h-8 w-8 text-destructive hover:text-destructive"
+                      data-testid={`button-delete-report-${report.id}`}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+                {index < reports.length - 1 && <Separator />}
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
