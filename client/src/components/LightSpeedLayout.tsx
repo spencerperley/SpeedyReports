@@ -18,16 +18,14 @@ interface ReportData {
 
 interface SavedReport {
   id: string;
-  name: string;
-  dateCreated: string;
+  reportName: string;
   createdBy: string;
-  dateRange: {
-    start: string;
-    end: string;
-  };
-  outlets: string[];
-  suppliers: string[];
-  categories: string[];
+  startDate: string;
+  endDate: string;
+
+  selectedOutlets: string[];
+  selectedSuppliers: string[];
+  selectedCategories: string[];
   includeNonzeroOnly: boolean;
 }
 
@@ -35,126 +33,147 @@ export function LightSpeedLayout() {
   const [darkMode, setDarkMode] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [currentReportData, setCurrentReportData] = useState<Partial<ReportData>>({});
-  const [currentUserEmail, setCurrentUserEmail] = useState('user@example.com');
+  const [currentReportData, setCurrentReportData] = useState<
+    Partial<ReportData>
+  >({});
+  const [currentUserEmail, setCurrentUserEmail] = useState("");
+  const currentUserName = currentUserEmail.split("|")[1]
 
   // Fetch suppliers from API
   const { data: suppliers = [], isLoading: suppliersLoading } = useQuery({
-    queryKey: ['/api/suppliers'],
-    queryFn: () => fetch('http://localhost:3000/api/suppliers').then(res => res.json())
+    queryKey: ["/api/suppliers"],
+    queryFn: () =>
+      fetch("http://localhost:3000/api/suppliers").then((res) => res.json()),
   });
 
   // Fetch categories from API
   const { data: categories = [], isLoading: categoriesLoading } = useQuery({
-    queryKey: ['/api/categories'],
-    queryFn: () => fetch('http://localhost:3000/api/categories').then(res => res.json())
+    queryKey: ["/api/categories"],
+    queryFn: () =>
+      fetch("http://localhost:3000/api/categories").then((res) => res.json()),
   });
+  const outlets = ["Ute Mountaineer", "Neptune Mountaineering", "AXCC"];
+  // Fetch outlets from API
+  // const { data: outlets = [], isLoading: outletsLoading } = useQuery{
+  //   queryKey: ["/api/outlets"],
+  //     queryFn: () =>
+  //     fetch("http://localhost:3000/api/outlets").then((res) => res.json())
+  // });
 
   // Fetch saved reports from API
-  const { data: savedReports = [], isLoading: reportsLoading, refetch: refetchReports } = useQuery({
-    queryKey: ['/api/saved_reports'],
-    queryFn: () => fetch('http://localhost:3000/api/saved_reports').then(res => res.json())
+  const {
+    data: savedReports = [],
+    isLoading: reportsLoading,
+    refetch: refetchReports,
+  } = useQuery({
+    queryKey: ["/api/saved_reports"],
+    queryFn: () =>
+      fetch("http://localhost:3000/api/saved_reports").then((res) =>
+        res.json(),
+      ),
   });
 
   // Dark mode toggle
   useEffect(() => {
-    const isDark = localStorage.getItem('darkMode') === 'true';
+    const isDark = localStorage.getItem("darkMode") === "true";
     setDarkMode(isDark);
-    document.documentElement.classList.toggle('dark', isDark);
+    document.documentElement.classList.toggle("dark", isDark);
   }, []);
 
   const toggleDarkMode = () => {
     const newDarkMode = !darkMode;
     setDarkMode(newDarkMode);
-    localStorage.setItem('darkMode', newDarkMode.toString());
-    document.documentElement.classList.toggle('dark', newDarkMode);
-    console.log('Dark mode toggled:', newDarkMode);
+    localStorage.setItem("darkMode", newDarkMode.toString());
+    document.documentElement.classList.toggle("dark", newDarkMode);
+    console.log("Dark mode toggled:", newDarkMode);
   };
 
   // Generate report mutation
   const generateReportMutation = useMutation({
-    mutationFn: (data: ReportData) => 
-      fetch('http://localhost:3000/api/generate_report', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      }).then(res => res.blob()),
+    mutationFn: (data: ReportData) =>
+      fetch("http://localhost:3000/api/generate_report", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      }).then((res) => res.blob()),
     onSuccess: (blob, data) => {
       // Create download link for CSV
       const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
+      const link = document.createElement("a");
       link.href = url;
-      link.download = `${data.reportName.replace(/[^a-zA-Z0-9]/g, '_')}.csv`;
+      link.download = `${data.reportName.replace(/[^a-zA-Z0-9]/g, "_")}.csv`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-      console.log('Report generated and downloaded successfully');
+      console.log("Report generated and downloaded successfully");
     },
     onError: (error) => {
-      console.error('Error generating report:', error);
-    }
+      console.error("Error generating report:", error);
+    },
   });
 
   // Save report mutation
   const saveReportMutation = useMutation({
-    mutationFn: (data: ReportData & { createdBy: string }) => 
-      fetch('http://localhost:3000/api/save_report', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      }).then(res => res.json()),
+    mutationFn: (data: ReportData & { createdBy: string }) => {
+      console.log("Saving report with data:", data); // log before request
+      return fetch("http://localhost:3000/api/save_report", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      }).then((res) => res.json());
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/saved_reports'] });
-      console.log('Report saved successfully');
+      queryClient.invalidateQueries({ queryKey: ["/api/saved_reports"] });
+      console.log("Report saved successfully");
     },
     onError: (error) => {
-      console.error('Error saving report:', error);
-    }
+      console.error("Error saving report:", error);
+    },
   });
 
   // Delete report mutation
   const deleteReportMutation = useMutation({
-    mutationFn: (reportId: string) => 
+    mutationFn: (reportId: string) =>
       fetch(`http://localhost:3000/api/delete_report/${reportId}`, {
-        method: 'DELETE'
+        method: "DELETE",
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/saved_reports'] });
-      console.log('Report deleted successfully');
+      queryClient.invalidateQueries({ queryKey: ["/api/saved_reports"] });
+      console.log("Report deleted successfully");
     },
     onError: (error) => {
-      console.error('Error deleting report:', error);
-    }
+      console.error("Error deleting report:", error);
+    },
   });
 
   const handleGenerateReport = async (data: ReportData) => {
-    console.log('Generating report with data:', data);
+    console.log("Generating report with data:", data);
     generateReportMutation.mutate(data);
   };
 
   const handleSaveReport = async (data: ReportData) => {
-    console.log('Saving report with data:', data);
+    console.log("Saving report with data:", data);
     saveReportMutation.mutate({ ...data, createdBy: currentUserEmail });
   };
 
   const handleDeleteReport = async (reportId: string) => {
-    console.log('Deleting report:', reportId);
+    console.log("Deleting report:", reportId);
     deleteReportMutation.mutate(reportId);
   };
 
   const handleLoadReport = (report: SavedReport) => {
     const reportData: Partial<ReportData> = {
-      reportName: report.name,
-      startDate: report.dateRange.start,
-      endDate: report.dateRange.end,
-      selectedOutlets: report.outlets,
-      selectedSuppliers: report.suppliers,
-      selectedCategories: report.categories,
-      includeNonzeroOnly: report.includeNonzeroOnly
+      reportName: report.reportName,
+      startDate: report.startDate,
+      endDate: report.endDate,
+      selectedOutlets: report.selectedOutlets,
+      selectedSuppliers: report.selectedSuppliers,
+      selectedCategories: report.selectedCategories,
+      includeNonzeroOnly: report.includeNonzeroOnly,
     };
     setCurrentReportData(reportData);
-    console.log('Report loaded:', report.name);
+    console.log("Report loaded:", report.name);
   };
 
   return (
@@ -167,8 +186,11 @@ export function LightSpeedLayout() {
           </h1>
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
-              <label className="text-sm font-medium text-foreground" htmlFor="user-email">
-                Current User Email*:
+              <label
+                className="text-sm font-medium text-foreground"
+                htmlFor="user-email"
+              >
+                Current User Key:
               </label>
               <input
                 id="user-email"
@@ -176,13 +198,12 @@ export function LightSpeedLayout() {
                 value={currentUserEmail}
                 onChange={(e) => {
                   setCurrentUserEmail(e.target.value);
-                  console.log('User email changed:', e.target.value);
+                  console.log("User email changed:", e.target.value);
                 }}
                 className="px-3 py-1 text-sm border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                placeholder="Enter email..."
+                placeholder="Enter Key..."
                 data-testid="input-user-email"
               />
-              <span className="text-xs text-muted-foreground">*Will be derived from Google auth</span>
             </div>
             <Button
               size="icon"
@@ -190,7 +211,11 @@ export function LightSpeedLayout() {
               onClick={toggleDarkMode}
               data-testid="button-theme-toggle"
             >
-              {darkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+              {darkMode ? (
+                <Sun className="h-5 w-5" />
+              ) : (
+                <Moon className="h-5 w-5" />
+              )}
             </Button>
           </div>
         </div>
@@ -203,6 +228,7 @@ export function LightSpeedLayout() {
           <ReportForm
             suppliers={suppliers}
             categories={categories}
+            outlets={outlets}
             onGenerateReport={handleGenerateReport}
             onSaveReport={handleSaveReport}
             initialData={currentReportData}
@@ -216,7 +242,7 @@ export function LightSpeedLayout() {
           <div className="p-4">
             <SavedReportsList
               reports={savedReports}
-              currentUserEmail={currentUserEmail}
+              currentUserName={currentUserName}
               onDeleteReport={handleDeleteReport}
               onLoadReport={handleLoadReport}
             />

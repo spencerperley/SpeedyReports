@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Download, Save, FileText } from "lucide-react";
+import { useState, useEffect } from "react";
+import { FileText, Download, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -32,50 +32,60 @@ interface ReportFormProps {
 export function ReportForm({
   suppliers,
   categories,
+  outlets,
   onGenerateReport,
   onSaveReport,
   initialData = {},
   isGenerating = false,
   isSaving = false,
-  className = ""
+  className = "",
 }: ReportFormProps) {
   const [formData, setFormData] = useState<ReportFormData>({
-    reportName: initialData.reportName || "",
-    startDate: initialData.startDate || "",
-    endDate: initialData.endDate || "",
-    selectedOutlets: initialData.selectedOutlets || [],
-    selectedSuppliers: initialData.selectedSuppliers || [],
-    selectedCategories: initialData.selectedCategories || [],
-    includeNonzeroOnly: initialData.includeNonzeroOnly || false
+    reportName: initialData?.reportName ?? "",
+    startDate: initialData?.startDate ?? "",
+    endDate: initialData?.endDate ?? "",
+    selectedOutlets: initialData?.selectedOutlets ?? [],
+    selectedSuppliers: initialData?.selectedSuppliers ?? [],
+    selectedCategories: initialData?.selectedCategories ?? [],
+    includeNonzeroOnly: initialData?.includeNonzeroOnly ?? false,
   });
 
-  const outlets = ["Ute Mountaineer", "Neptune"]; // Fixed outlets as specified
+  useEffect(() => {
+    setFormData({
+      reportName: initialData?.reportName ?? "",
+      startDate: initialData?.startDate ?? "",
+      endDate: initialData?.endDate ?? "",
+      selectedOutlets: initialData?.selectedOutlets ?? [],
+      selectedSuppliers: initialData?.selectedSuppliers ?? [],
+      selectedCategories: initialData?.selectedCategories ?? [],
+      includeNonzeroOnly: initialData?.includeNonzeroOnly ?? false,
+    });
+  }, [initialData]);
+
+  console.log("ReportForm initialData:", initialData);
+
+  // const outlets = ["Ute Mountaineer", "Neptune Mountaineering", "AXCC"]; // Fixed outlets as specified
 
   const handleInputChange = (field: keyof ReportFormData, value: any) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
     console.log(`${field} changed:`, value);
   };
 
   const handleGenerateReport = () => {
     onGenerateReport(formData);
-    console.log('Generate report triggered with data:', formData);
+    console.log("Generate report triggered with data:", formData);
   };
 
   const handleSaveReport = () => {
     onSaveReport(formData);
-    console.log('Save report triggered with data:', formData);
+    console.log("Save report triggered with data:", formData);
   };
 
   const isFormValid = () => {
-    return formData.reportName.trim() && 
-           formData.startDate && 
-           formData.endDate &&
-           (formData.selectedOutlets.length > 0 ||
-            formData.selectedSuppliers.length > 0 ||
-            formData.selectedCategories.length > 0);
+    return formData.reportName.trim();
   };
 
   return (
@@ -89,14 +99,17 @@ export function ReportForm({
       <CardContent className="space-y-6">
         {/* Report Name */}
         <div>
-          <Label htmlFor="report-name" className="text-sm font-medium text-foreground mb-2 block">
+          <Label
+            htmlFor="report-name"
+            className="text-sm font-medium text-foreground mb-2 block"
+          >
             Report Name
           </Label>
           <Input
             id="report-name"
             placeholder="Enter report name..."
             value={formData.reportName}
-            onChange={(e) => handleInputChange('reportName', e.target.value)}
+            onChange={(e) => handleInputChange("reportName", e.target.value)}
             data-testid="input-report-name"
           />
         </div>
@@ -105,8 +118,8 @@ export function ReportForm({
         <DateRangePicker
           startDate={formData.startDate}
           endDate={formData.endDate}
-          onStartDateChange={(date) => handleInputChange('startDate', date)}
-          onEndDateChange={(date) => handleInputChange('endDate', date)}
+          onStartDateChange={(date) => handleInputChange("startDate", date)}
+          onEndDateChange={(date) => handleInputChange("endDate", date)}
         />
 
         {/* Outlet Filter */}
@@ -114,7 +127,9 @@ export function ReportForm({
           label="Outlet Filter"
           options={outlets}
           selected={formData.selectedOutlets}
-          onSelectionChange={(selected) => handleInputChange('selectedOutlets', selected)}
+          onSelectionChange={(selected) =>
+            handleInputChange("selectedOutlets", selected)
+          }
           searchPlaceholder="Search outlets..."
         />
 
@@ -123,7 +138,9 @@ export function ReportForm({
           label="Supplier Filter"
           options={suppliers}
           selected={formData.selectedSuppliers}
-          onSelectionChange={(selected) => handleInputChange('selectedSuppliers', selected)}
+          onSelectionChange={(selected) =>
+            handleInputChange("selectedSuppliers", selected)
+          }
           searchPlaceholder="Search suppliers..."
         />
 
@@ -132,7 +149,9 @@ export function ReportForm({
           label="Category Filter"
           options={categories}
           selected={formData.selectedCategories}
-          onSelectionChange={(selected) => handleInputChange('selectedCategories', selected)}
+          onSelectionChange={(selected) =>
+            handleInputChange("selectedCategories", selected)
+          }
           searchPlaceholder="Search categories..."
         />
 
@@ -141,11 +160,13 @@ export function ReportForm({
           <Checkbox
             id="include-nonzero"
             checked={formData.includeNonzeroOnly}
-            onCheckedChange={(checked) => handleInputChange('includeNonzeroOnly', checked as boolean)}
+            onCheckedChange={(checked) =>
+              handleInputChange("includeNonzeroOnly", checked as boolean)
+            }
             data-testid="checkbox-include-nonzero-only"
           />
-          <Label 
-            htmlFor="include-nonzero" 
+          <Label
+            htmlFor="include-nonzero"
             className="text-sm font-medium cursor-pointer"
           >
             Include only nonzero quantities
@@ -161,7 +182,7 @@ export function ReportForm({
             data-testid="button-generate-report"
           >
             <Download className="h-4 w-4 mr-2" />
-            {isGenerating ? 'Generating...' : 'Generate Report'}
+            {isGenerating ? "Generating..." : "Generate Report"}
           </Button>
           <Button
             variant="outline"
@@ -170,7 +191,7 @@ export function ReportForm({
             data-testid="button-save-report"
           >
             <Save className="h-4 w-4 mr-2" />
-            {isSaving ? 'Saving...' : 'Save'}
+            {isSaving ? "Saving..." : "Save"}
           </Button>
         </div>
       </CardContent>
