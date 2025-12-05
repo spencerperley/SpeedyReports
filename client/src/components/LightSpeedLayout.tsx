@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { Moon, Sun } from "lucide-react";
+import { Moon, Sun, LogIn, Key } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ReportForm } from "./ReportForm";
 import { SavedReportsList } from "./SavedReportsList";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -29,6 +30,24 @@ interface SavedReport {
   includeNonzeroOnly: boolean;
 }
 
+// Cookie helper functions
+function getCookie(name: string): string | null {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop()?.split(';').shift() || null;
+  return null;
+}
+
+function setCookie(name: string, value: string, days: number = 30) {
+  const expires = new Date();
+  expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
+  document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/`;
+}
+
+function deleteCookie(name: string) {
+  document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
+}
+
 export function LightSpeedLayout() {
   const [darkMode, setDarkMode] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -36,41 +55,58 @@ export function LightSpeedLayout() {
   const [currentReportData, setCurrentReportData] = useState<
     Partial<ReportData>
   >({});
-  const [currentUserEmail, setCurrentUserEmail] = useState("");
-  const currentUserName = currentUserEmail.split("|")[1]
+  const [apiKey, setApiKey] = useState<string>("");
+  const [keyInput, setKeyInput] = useState("");
+  const currentUserName = apiKey.split("|")[1] || "";
 
-  // Fetch suppliers from API
+  // Load API key from cookie on mount
+  useEffect(() => {
+    const savedKey = getCookie("api_key");
+    if (savedKey) {
+      setApiKey(savedKey);
+    }
+  }, []);
+
+  // Helper function to create headers with API key
+  const getAuthHeaders = () => ({
+    "Content-Type": "application/json",
+    "X-API-Key": apiKey,
+  });
+
+  // Fetch suppliers from API (only when authenticated)
   const { data: suppliers = [], isLoading: suppliersLoading } = useQuery({
-    queryKey: ["/api/suppliers"],
+    queryKey: ["/api/suppliers", apiKey],
     queryFn: () =>
-      fetch("http://localhost:3000/api/suppliers").then((res) => res.json()),
+      fetch("http://localhost:3000/api/suppliers", {
+        headers: { "X-API-Key": apiKey },
+      }).then((res) => res.json()),
+    enabled: !!apiKey,
   });
 
-  // Fetch categories from API
+  // Fetch categories from API (only when authenticated)
   const { data: categories = [], isLoading: categoriesLoading } = useQuery({
-    queryKey: ["/api/categories"],
+    queryKey: ["/api/categories", apiKey],
     queryFn: () =>
-      fetch("http://localhost:3000/api/categories").then((res) => res.json()),
+      fetch("http://localhost:3000/api/categories", {
+        headers: { "X-API-Key": apiKey },
+      }).then((res) => res.json()),
+    enabled: !!apiKey,
   });
+  
   const outlets = ["Ute Mountaineer", "Neptune Mountaineering", "AXCC"];
-  // Fetch outlets from API
-  // const { data: outlets = [], isLoading: outletsLoading } = useQuery{
-  //   queryKey: ["/api/outlets"],
-  //     queryFn: () =>
-  //     fetch("http://localhost:3000/api/outlets").then((res) => res.json())
-  // });
 
-  // Fetch saved reports from API
+  // Fetch saved reports from API (only when authenticated)
   const {
     data: savedReports = [],
     isLoading: reportsLoading,
     refetch: refetchReports,
   } = useQuery({
-    queryKey: ["/api/saved_reports"],
+    queryKey: ["/api/saved_reports", apiKey],
     queryFn: () =>
-      fetch("http://localhost:3000/api/saved_reports").then((res) =>
-        res.json(),
-      ),
+      fetch("http://localhost:3000/api/saved_reports", {
+        headers: { "X-API-Key": apiKey },
+      }).then((res) => res.json()),
+    enabled: !!apiKey,
   });
 
   // Dark mode toggle
@@ -79,6 +115,22 @@ export function LightSpeedLayout() {
     setDarkMode(isDark);
     document.documentElement.classList.toggle("dark", isDark);
   }, []);
+
+  // Handle login
+  const handleLogin = () => {
+    if (keyInput.trim()) {
+      setCookie("api_key", keyInput.trim());
+      setApiKey(keyInput.trim());
+      setKeyInput("");
+    }
+  };
+
+  // Handle logout
+  const handleLogout = () => {
+    deleteCookie("api_key");
+    setApiKey("");
+    queryClient.clear();
+  };
 
   const toggleDarkMode = () => {
     const newDarkMode = !darkMode;
@@ -93,7 +145,7 @@ export function LightSpeedLayout() {
     mutationFn: (data: ReportData) =>
       fetch("http://localhost:3000/api/generate_report", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: getAuthHeaders(),
         body: JSON.stringify(data),
       }).then((res) => res.blob()),
     onSuccess: (blob, data) => {
@@ -116,15 +168,15 @@ export function LightSpeedLayout() {
   // Save report mutation
   const saveReportMutation = useMutation({
     mutationFn: (data: ReportData & { createdBy: string }) => {
-      console.log("Saving report with data:", data); // log before request
+      console.log("Saving report with data:", data);
       return fetch("http://localhost:3000/api/save_report", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: getAuthHeaders(),
         body: JSON.stringify(data),
       }).then((res) => res.json());
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/saved_reports"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/saved_reports", apiKey] });
       console.log("Report saved successfully");
     },
     onError: (error) => {
@@ -137,9 +189,10 @@ export function LightSpeedLayout() {
     mutationFn: (reportId: string) =>
       fetch(`http://localhost:3000/api/delete_report/${reportId}`, {
         method: "DELETE",
+        headers: { "X-API-Key": apiKey },
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/saved_reports"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/saved_reports", apiKey] });
       console.log("Report deleted successfully");
     },
     onError: (error) => {
@@ -154,7 +207,7 @@ export function LightSpeedLayout() {
 
   const handleSaveReport = async (data: ReportData) => {
     console.log("Saving report with data:", data);
-    saveReportMutation.mutate({ ...data, createdBy: currentUserEmail });
+    saveReportMutation.mutate({ ...data, createdBy: apiKey });
   };
 
   const handleDeleteReport = async (reportId: string) => {
@@ -173,8 +226,74 @@ export function LightSpeedLayout() {
       includeNonzeroOnly: report.includeNonzeroOnly,
     };
     setCurrentReportData(reportData);
-    console.log("Report loaded:", report.name);
+    console.log("Report loaded:", report.reportName);
   };
+
+  // Show login screen if no API key
+  if (!apiKey) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="absolute top-4 right-4">
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={toggleDarkMode}
+            data-testid="button-theme-toggle"
+          >
+            {darkMode ? (
+              <Sun className="h-5 w-5" />
+            ) : (
+              <Moon className="h-5 w-5" />
+            )}
+          </Button>
+        </div>
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <div className="mx-auto mb-4 h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+              <Key className="h-6 w-6 text-primary" />
+            </div>
+            <CardTitle className="text-2xl">Light Speed Order Manager</CardTitle>
+            <p className="text-muted-foreground mt-2">
+              Enter your API key to continue
+            </p>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div>
+                <label
+                  className="text-sm font-medium text-foreground block mb-2"
+                  htmlFor="api-key-input"
+                >
+                  API Key
+                </label>
+                <input
+                  id="api-key-input"
+                  type="text"
+                  value={keyInput}
+                  onChange={(e) => setKeyInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleLogin();
+                  }}
+                  className="w-full px-3 py-2 text-sm border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                  placeholder="Enter your API key..."
+                  data-testid="input-api-key"
+                />
+              </div>
+              <Button
+                className="w-full"
+                onClick={handleLogin}
+                disabled={!keyInput.trim()}
+                data-testid="button-login"
+              >
+                <LogIn className="h-4 w-4 mr-2" />
+                Login
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -186,24 +305,17 @@ export function LightSpeedLayout() {
           </h1>
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
-              <label
-                className="text-sm font-medium text-foreground"
-                htmlFor="user-email"
+              <span className="text-sm text-muted-foreground">
+                Logged in as: <span className="font-medium text-foreground">{currentUserName || apiKey.substring(0, 20)}...</span>
+              </span>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleLogout}
+                data-testid="button-logout"
               >
-                Current User Key:
-              </label>
-              <input
-                id="user-email"
-                type="email"
-                value={currentUserEmail}
-                onChange={(e) => {
-                  setCurrentUserEmail(e.target.value);
-                  console.log("User email changed:", e.target.value);
-                }}
-                className="px-3 py-1 text-sm border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                placeholder="Enter Key..."
-                data-testid="input-user-email"
-              />
+                Logout
+              </Button>
             </div>
             <Button
               size="icon"

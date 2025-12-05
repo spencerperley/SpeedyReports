@@ -21,6 +21,7 @@ interface ReportFormData {
 interface ReportFormProps {
   suppliers: string[];
   categories: string[];
+  outlets: string[];
   onGenerateReport: (data: ReportFormData) => void;
   onSaveReport: (data: ReportFormData) => void;
   initialData?: Partial<ReportFormData>;
