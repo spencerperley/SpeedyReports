@@ -48,6 +48,9 @@ function deleteCookie(name: string) {
   document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
 }
 
+// API URL from environment variable - easily configurable
+const API_URL = import.meta.env.VITE_API_URL || "https://lightspeedordermanager.onrender.com";
+
 export function LightSpeedLayout() {
   const [darkMode, setDarkMode] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -77,7 +80,7 @@ export function LightSpeedLayout() {
   const { data: suppliers = [], isLoading: suppliersLoading } = useQuery({
     queryKey: ["/api/suppliers", apiKey],
     queryFn: () =>
-      fetch("http://localhost:3000/api/suppliers", {
+      fetch(`${API_URL}/api/suppliers`, {
         headers: { "X-API-Key": apiKey },
       }).then((res) => res.json()),
     enabled: !!apiKey,
@@ -87,7 +90,7 @@ export function LightSpeedLayout() {
   const { data: categories = [], isLoading: categoriesLoading } = useQuery({
     queryKey: ["/api/categories", apiKey],
     queryFn: () =>
-      fetch("http://localhost:3000/api/categories", {
+      fetch(`${API_URL}/api/categories`, {
         headers: { "X-API-Key": apiKey },
       }).then((res) => res.json()),
     enabled: !!apiKey,
@@ -103,7 +106,7 @@ export function LightSpeedLayout() {
   } = useQuery({
     queryKey: ["/api/saved_reports", apiKey],
     queryFn: () =>
-      fetch("http://localhost:3000/api/saved_reports", {
+      fetch(`${API_URL}/api/saved_reports`, {
         headers: { "X-API-Key": apiKey },
       }).then((res) => res.json()),
     enabled: !!apiKey,
@@ -143,7 +146,7 @@ export function LightSpeedLayout() {
   // Generate report mutation
   const generateReportMutation = useMutation({
     mutationFn: (data: ReportData) =>
-      fetch("http://localhost:3000/api/generate_report", {
+      fetch(`${API_URL}/api/generate_report`, {
         method: "POST",
         headers: getAuthHeaders(),
         body: JSON.stringify(data),
@@ -169,7 +172,7 @@ export function LightSpeedLayout() {
   const saveReportMutation = useMutation({
     mutationFn: (data: ReportData & { createdBy: string }) => {
       console.log("Saving report with data:", data);
-      return fetch("http://localhost:3000/api/save_report", {
+      return fetch(`${API_URL}/api/save_report`, {
         method: "POST",
         headers: getAuthHeaders(),
         body: JSON.stringify(data),
@@ -187,7 +190,7 @@ export function LightSpeedLayout() {
   // Delete report mutation
   const deleteReportMutation = useMutation({
     mutationFn: (reportId: string) =>
-      fetch(`http://localhost:3000/api/delete_report/${reportId}`, {
+      fetch(`${API_URL}/api/delete_report/${reportId}`, {
         method: "DELETE",
         headers: { "X-API-Key": apiKey },
       }),
