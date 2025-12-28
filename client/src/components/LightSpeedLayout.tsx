@@ -95,8 +95,16 @@ export function LightSpeedLayout() {
       }).then((res) => res.json()),
     enabled: !!apiKey,
   });
-  
-  const outlets = ["Ute Mountaineer", "Neptune Mountaineering", "AXCC"];
+
+  // Fetch outlets from API (only when authenticated)
+  const { data: outlets = [], isLoading: outletsLoading } = useQuery({
+    queryKey: ["/api/outlets", apiKey],
+    queryFn: () =>
+      fetch(`${API_URL}/api/outlets`, {
+        headers: { "X-API-Key": apiKey },
+      }).then((res) => res.json()),
+    enabled: !!apiKey,
+  });
 
   // Fetch saved reports from API (only when authenticated)
   const {
