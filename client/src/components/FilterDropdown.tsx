@@ -25,8 +25,11 @@ export function FilterDropdown({
   const [open, setOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
 
-  const filteredOptions = options.filter(option =>
-    option.toLowerCase().includes(searchTerm.toLowerCase())
+  // Ensure options is always an array
+  const safeOptions = Array.isArray(options) ? options : [];
+
+  const filteredOptions = safeOptions.filter(option =>
+    option && typeof option === 'string' && option.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const isAllSelected = selected.length === filteredOptions.length && filteredOptions.length > 0;

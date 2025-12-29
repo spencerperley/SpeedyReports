@@ -80,30 +80,39 @@ export function LightSpeedLayout() {
   // Fetch suppliers from API (only when authenticated)
   const { data: suppliers = [], isLoading: suppliersLoading } = useQuery({
     queryKey: ["/api/suppliers", apiKey],
-    queryFn: () =>
-      fetch(`${API_URL}/api/suppliers`, {
+    queryFn: async () => {
+      const res = await fetch(`${API_URL}/api/suppliers`, {
         headers: { "X-API-Key": apiKey },
-      }).then((res) => res.json()),
+      });
+      const data = await res.json();
+      return Array.isArray(data) ? data : [];
+    },
     enabled: !!apiKey,
   });
 
   // Fetch categories from API (only when authenticated)
   const { data: categories = [], isLoading: categoriesLoading } = useQuery({
     queryKey: ["/api/categories", apiKey],
-    queryFn: () =>
-      fetch(`${API_URL}/api/categories`, {
+    queryFn: async () => {
+      const res = await fetch(`${API_URL}/api/categories`, {
         headers: { "X-API-Key": apiKey },
-      }).then((res) => res.json()),
+      });
+      const data = await res.json();
+      return Array.isArray(data) ? data : [];
+    },
     enabled: !!apiKey,
   });
 
   // Fetch outlets from API (only when authenticated)
   const { data: outlets = [], isLoading: outletsLoading } = useQuery({
     queryKey: ["/api/outlets", apiKey],
-    queryFn: () =>
-      fetch(`${API_URL}/api/outlets`, {
+    queryFn: async () => {
+      const res = await fetch(`${API_URL}/api/outlets`, {
         headers: { "X-API-Key": apiKey },
-      }).then((res) => res.json()),
+      });
+      const data = await res.json();
+      return Array.isArray(data) ? data : [];
+    },
     enabled: !!apiKey,
   });
 
