@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ReportForm } from "./ReportForm";
 import { SavedReportsList } from "./SavedReportsList";
+import { SyncStatus } from "./SyncStatus";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 
@@ -362,7 +363,8 @@ export function LightSpeedLayout() {
 
         {/* Saved Reports Sidebar */}
         <aside className="w-80 border-l border-border">
-          <div className="p-4">
+          <div className="p-4 space-y-4">
+            <SyncStatus apiUrl={API_URL} apiKey={apiKey} />
             <SavedReportsList
               reports={savedReports}
               currentUserName={currentUserName}
