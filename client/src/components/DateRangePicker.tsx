@@ -27,10 +27,13 @@ export function DateRangePicker({
     console.log('End date changed:', e.target.value);
   };
 
+  // Validate that start date is not after end date
+  const isInvalidRange = startDate && endDate && startDate > endDate;
+
   return (
     <div className={className}>
       <Label className="text-sm font-medium text-foreground mb-2 block">
-        Date Range
+        Due Date Range
       </Label>
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
@@ -44,7 +47,7 @@ export function DateRangePicker({
               type="date"
               value={startDate}
               onChange={handleStartDateChange}
-              className="pl-10"
+              className={`pl-10 ${isInvalidRange ? 'border-red-500' : ''}`}
               data-testid="input-start-date"
             />
           </div>
@@ -60,12 +63,23 @@ export function DateRangePicker({
               type="date"
               value={endDate}
               onChange={handleEndDateChange}
-              className="pl-10"
+              className={`pl-10 ${isInvalidRange ? 'border-red-500' : ''}`}
               data-testid="input-end-date"
             />
           </div>
         </div>
       </div>
+      {isInvalidRange && (
+        <p className="text-sm text-red-500 mt-2">
+          Start date must be before or equal to end date
+        </p>
+      )}
     </div>
   );
+}
+
+// Helper to check if date range is valid (exported for use in form validation)
+export function isValidDateRange(startDate: string, endDate: string): boolean {
+  if (!startDate || !endDate) return true; // Empty dates are valid (other validation handles required fields)
+  return startDate <= endDate;
 }

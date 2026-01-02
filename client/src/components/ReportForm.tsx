@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FilterDropdown } from "./FilterDropdown";
-import { DateRangePicker } from "./DateRangePicker";
+import { DateRangePicker, isValidDateRange } from "./DateRangePicker";
 
 interface ReportFormData {
   reportName: string;
@@ -86,7 +86,7 @@ export function ReportForm({
   };
 
   const isFormValid = () => {
-    return formData.reportName.trim();
+    return formData.reportName.trim() && isValidDateRange(formData.startDate, formData.endDate);
   };
 
   return (
