@@ -6,6 +6,7 @@ import { ReportForm } from "./ReportForm";
 import { SavedReportsList } from "./SavedReportsList";
 import { SyncStatus, SyncStatusHandle } from "./SyncStatus";
 import { MissingProductsSync } from "./MissingProductsSync";
+import { FeedbackForm } from "./FeedbackForm";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 
@@ -380,7 +381,7 @@ export function LightSpeedLayout() {
       {/* Main Content */}
       <div className="flex">
         {/* Main Form Area */}
-        <main className="flex-1 p-8">
+        <main className="flex-1 p-8 space-y-6">
           <ReportForm
             suppliers={suppliers}
             categories={categories}
@@ -392,6 +393,7 @@ export function LightSpeedLayout() {
             isGenerating={generateReportMutation.isPending}
             isSaving={saveReportMutation.isPending}
           />
+          <FeedbackForm apiUrl={API_URL} apiKey={apiKey} />
         </main>
 
         {/* Saved Reports Sidebar */}
