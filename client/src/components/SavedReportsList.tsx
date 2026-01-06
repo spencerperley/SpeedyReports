@@ -25,6 +25,24 @@ interface SavedReportsListProps {
   className?: string;
 }
 
+// Helper to partially hide the API key (show username or masked key)
+function formatCreatedBy(createdBy: string): string {
+  if (!createdBy) return "Unknown";
+
+  // Check if the format is "token|username"
+  if (createdBy.includes("|")) {
+    const username = createdBy.split("|")[1];
+    if (username) return username;
+  }
+
+  // Otherwise show first 8 chars + ... + last 4 chars
+  if (createdBy.length > 16) {
+    return `${createdBy.substring(0, 8)}...${createdBy.substring(createdBy.length - 4)}`;
+  }
+
+  return createdBy.substring(0, 8) + "...";
+}
+
 export function SavedReportsList({
   reports,
   currentUserName,
@@ -58,12 +76,20 @@ export function SavedReportsList({
     });
   };
 
+  // Helper to extract username from createdBy (format: "token|username" or just key)
+  const getUsernameFromCreatedBy = (createdBy: string): string => {
+    if (createdBy.includes("|")) {
+      return createdBy.split("|")[1] || createdBy;
+    }
+    return createdBy;
+  };
+
   // Split reports into "My Reports" and "Other"
   const myReports = reports.filter(
-    (report) => report.createdBy === currentUserName,
+    (report) => getUsernameFromCreatedBy(report.createdBy) === currentUserName,
   );
   const otherReports = reports.filter(
-    (report) => report.createdBy !== currentUserName,
+    (report) => getUsernameFromCreatedBy(report.createdBy) !== currentUserName,
   );
 
   const renderReportSection = (
@@ -103,7 +129,7 @@ export function SavedReportsList({
                       </span>
                     </div>
                     <div className="text-xs text-muted-foreground mt-1">
-                      Created by: {report.createdBy}
+                      Created by: {formatCreatedBy(report.createdBy)}
                     </div>
 
                     <div className="text-xs text-muted-foreground mt-1">

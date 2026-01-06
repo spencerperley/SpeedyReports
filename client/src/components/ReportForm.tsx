@@ -1,10 +1,17 @@
 import { useState, useEffect } from "react";
-import { FileText, Download, Save } from "lucide-react";
+import { FileText, Download, Save, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { FilterDropdown } from "./FilterDropdown";
 import { DateRangePicker, isValidDateRange } from "./DateRangePicker";
 
@@ -16,6 +23,8 @@ interface ReportFormData {
   selectedSuppliers: string[];
   selectedCategories: string[];
   includeNonzeroOnly: boolean;
+  excludeContinuations: boolean;
+  fileType: "csv" | "xlsx";
 }
 
 interface ReportFormProps {
@@ -24,6 +33,7 @@ interface ReportFormProps {
   outlets: string[];
   onGenerateReport: (data: ReportFormData) => void;
   onSaveReport: (data: ReportFormData) => void;
+  onClearReport?: () => void;
   initialData?: Partial<ReportFormData>;
   isGenerating?: boolean;
   isSaving?: boolean;
@@ -36,31 +46,37 @@ export function ReportForm({
   outlets,
   onGenerateReport,
   onSaveReport,
+  onClearReport,
   initialData = {},
   isGenerating = false,
   isSaving = false,
   className = "",
 }: ReportFormProps) {
-  const [formData, setFormData] = useState<ReportFormData>({
-    reportName: initialData?.reportName ?? "",
-    startDate: initialData?.startDate ?? "",
-    endDate: initialData?.endDate ?? "",
-    selectedOutlets: initialData?.selectedOutlets ?? [],
-    selectedSuppliers: initialData?.selectedSuppliers ?? [],
-    selectedCategories: initialData?.selectedCategories ?? [],
-    includeNonzeroOnly: initialData?.includeNonzeroOnly ?? false,
+  const getDefaultFormData = (): ReportFormData => ({
+    reportName: "",
+    startDate: "",
+    endDate: "",
+    selectedOutlets: [],
+    selectedSuppliers: [],
+    selectedCategories: [],
+    includeNonzeroOnly: false,
+    excludeContinuations: false,
+    fileType: "csv",
   });
+
+  const [formData, setFormData] = useState<ReportFormData>({
+    ...getDefaultFormData(),
+    ...initialData,
+  });
+
+  const [showValidationErrors, setShowValidationErrors] = useState(false);
 
   useEffect(() => {
     setFormData({
-      reportName: initialData?.reportName ?? "",
-      startDate: initialData?.startDate ?? "",
-      endDate: initialData?.endDate ?? "",
-      selectedOutlets: initialData?.selectedOutlets ?? [],
-      selectedSuppliers: initialData?.selectedSuppliers ?? [],
-      selectedCategories: initialData?.selectedCategories ?? [],
-      includeNonzeroOnly: initialData?.includeNonzeroOnly ?? false,
+      ...getDefaultFormData(),
+      ...initialData,
     });
+    setShowValidationErrors(false);
   }, [initialData]);
 
   console.log("ReportForm initialData:", initialData);
@@ -76,17 +92,51 @@ export function ReportForm({
   };
 
   const handleGenerateReport = () => {
+    if (!isFormValid()) {
+      setShowValidationErrors(true);
+      return;
+    }
+    setShowValidationErrors(false);
     onGenerateReport(formData);
     console.log("Generate report triggered with data:", formData);
   };
 
   const handleSaveReport = () => {
+    if (!isFormValid()) {
+      setShowValidationErrors(true);
+      return;
+    }
+    setShowValidationErrors(false);
     onSaveReport(formData);
     console.log("Save report triggered with data:", formData);
   };
 
+  const handleClearReport = () => {
+    setFormData(getDefaultFormData());
+    setShowValidationErrors(false);
+    onClearReport?.();
+    console.log("Report form cleared");
+  };
+
+  const getValidationErrors = (): string[] => {
+    const errors: string[] = [];
+    if (!formData.reportName.trim()) {
+      errors.push("Report name is required");
+    }
+    if (!formData.startDate) {
+      errors.push("Start date is required");
+    }
+    if (!formData.endDate) {
+      errors.push("End date is required");
+    }
+    if (formData.startDate && formData.endDate && !isValidDateRange(formData.startDate, formData.endDate)) {
+      errors.push("Start date must be before or equal to end date");
+    }
+    return errors;
+  };
+
   const isFormValid = () => {
-    return formData.reportName.trim() && isValidDateRange(formData.startDate, formData.endDate);
+    return getValidationErrors().length === 0;
   };
 
   return (
@@ -156,29 +206,80 @@ export function ReportForm({
           searchPlaceholder="Search categories..."
         />
 
-        {/* Include Only Nonzero Quantities */}
-        <div className="flex items-center space-x-2">
-          <Checkbox
-            id="include-nonzero"
-            checked={formData.includeNonzeroOnly}
-            onCheckedChange={(checked) =>
-              handleInputChange("includeNonzeroOnly", checked as boolean)
-            }
-            data-testid="checkbox-include-nonzero-only"
-          />
-          <Label
-            htmlFor="include-nonzero"
-            className="text-sm font-medium cursor-pointer"
-          >
-            Include only nonzero quantities
-          </Label>
+        {/* Checkboxes */}
+        <div className="space-y-3">
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="include-nonzero"
+              checked={formData.includeNonzeroOnly}
+              onCheckedChange={(checked) =>
+                handleInputChange("includeNonzeroOnly", checked as boolean)
+              }
+              data-testid="checkbox-include-nonzero-only"
+            />
+            <Label
+              htmlFor="include-nonzero"
+              className="text-sm font-medium cursor-pointer"
+            >
+              Include only nonzero quantities
+            </Label>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="exclude-continuations"
+              checked={formData.excludeContinuations}
+              onCheckedChange={(checked) =>
+                handleInputChange("excludeContinuations", checked as boolean)
+              }
+              data-testid="checkbox-exclude-continuations"
+            />
+            <Label
+              htmlFor="exclude-continuations"
+              className="text-sm font-medium cursor-pointer"
+            >
+              Exclude continuation orders ([cont], [cont1], etc.)
+            </Label>
+          </div>
         </div>
+
+        {/* File Type Selector */}
+        <div>
+          <Label className="text-sm font-medium text-foreground mb-2 block">
+            Export Format
+          </Label>
+          <Select
+            value={formData.fileType}
+            onValueChange={(value) => handleInputChange("fileType", value)}
+          >
+            <SelectTrigger className="w-full text-foreground" data-testid="select-file-type">
+              <SelectValue placeholder="Select format..." />
+            </SelectTrigger>
+            <SelectContent className="bg-background border-border">
+              <SelectItem value="csv" className="text-foreground hover:bg-accent">CSV (.csv)</SelectItem>
+              <SelectItem value="xlsx" className="text-foreground hover:bg-accent">Excel (.xlsx)</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Validation Errors */}
+        {showValidationErrors && getValidationErrors().length > 0 && (
+          <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-md p-3">
+            <ul className="text-sm text-red-600 dark:text-red-400 space-y-1">
+              {getValidationErrors().map((error, index) => (
+                <li key={index} className="flex items-center gap-2">
+                  <span className="text-red-500">•</span>
+                  {error}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         {/* Action Buttons */}
         <div className="flex gap-3 pt-4">
           <Button
             onClick={handleGenerateReport}
-            disabled={!isFormValid() || isGenerating}
+            disabled={isGenerating}
             className="flex-1"
             data-testid="button-generate-report"
           >
@@ -188,11 +289,19 @@ export function ReportForm({
           <Button
             variant="outline"
             onClick={handleSaveReport}
-            disabled={!isFormValid() || isSaving}
+            disabled={isSaving}
             data-testid="button-save-report"
           >
             <Save className="h-4 w-4 mr-2" />
             {isSaving ? "Saving..." : "Save"}
+          </Button>
+          <Button
+            variant="ghost"
+            onClick={handleClearReport}
+            data-testid="button-clear-report"
+          >
+            <RotateCcw className="h-4 w-4 mr-2" />
+            Clear
           </Button>
         </div>
       </CardContent>

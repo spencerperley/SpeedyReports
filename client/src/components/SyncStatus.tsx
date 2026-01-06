@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback, forwardRef, useImperativeHandle } from "react";
 import { RefreshCw, Check, Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,6 +17,11 @@ interface SyncStatusProps {
   apiKey: string;
 }
 
+export interface SyncStatusHandle {
+  startSync: () => Promise<void>;
+  isSyncing: boolean;
+}
+
 const SYNC_STEPS: { id: string; label: string }[] = [
   { id: "suppliers", label: "Suppliers" },
   { id: "outlets", label: "Outlets" },
@@ -27,7 +32,7 @@ const SYNC_STEPS: { id: string; label: string }[] = [
   { id: "inventory", label: "Inventory" },
 ];
 
-export function SyncStatus({ apiUrl, apiKey }: SyncStatusProps) {
+export const SyncStatus = forwardRef<SyncStatusHandle, SyncStatusProps>(function SyncStatus({ apiUrl, apiKey }, ref) {
   const [isSyncing, setIsSyncing] = useState(false);
   const [steps, setSteps] = useState<SyncStep[]>(
     SYNC_STEPS.map((s) => ({ ...s, status: "pending" as const }))
@@ -39,58 +44,66 @@ export function SyncStatus({ apiUrl, apiKey }: SyncStatusProps) {
     setError(null);
   }, []);
 
-  const startSync = useCallback(() => {
-    resetSteps();
-    setIsSyncing(true);
+  const startSync = useCallback((): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      resetSteps();
+      setIsSyncing(true);
 
-    const eventSource = new EventSource(`${apiUrl}/api/update_data`);
+      const eventSource = new EventSource(`${apiUrl}/api/update_data`);
 
-    eventSource.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        const { step, status, current, total, message } = data;
+      eventSource.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          const { step, status, current, total, message } = data;
 
-        if (step === "done") {
-          setIsSyncing(false);
-          eventSource.close();
-          return;
+          if (step === "done") {
+            setIsSyncing(false);
+            eventSource.close();
+            resolve();
+            return;
+          }
+
+          if (step === "error") {
+            setError(message || "An error occurred during sync");
+            setIsSyncing(false);
+            eventSource.close();
+            reject(new Error(message || "Sync error"));
+            return;
+          }
+
+          setSteps((prev) =>
+            prev.map((s) =>
+              s.id === step
+                ? {
+                    ...s,
+                    status: status as SyncStep["status"],
+                    current,
+                    total,
+                    message,
+                  }
+                : s
+            )
+          );
+        } catch (e) {
+          console.error("Error parsing SSE data:", e);
         }
+      };
 
-        if (step === "error") {
-          setError(message || "An error occurred during sync");
-          setIsSyncing(false);
-          eventSource.close();
-          return;
-        }
-
-        setSteps((prev) =>
-          prev.map((s) =>
-            s.id === step
-              ? {
-                  ...s,
-                  status: status as SyncStep["status"],
-                  current,
-                  total,
-                  message,
-                }
-              : s
-          )
-        );
-      } catch (e) {
-        console.error("Error parsing SSE data:", e);
-      }
-    };
-
-    eventSource.onerror = () => {
-      setError("Connection lost. Please try again.");
-      setIsSyncing(false);
-      eventSource.close();
-    };
-
-    return () => {
-      eventSource.close();
-    };
+      eventSource.onerror = () => {
+        setError("Connection lost. Please try again.");
+        setIsSyncing(false);
+        eventSource.close();
+        // Resolve anyway so report generation can continue
+        resolve();
+      };
+    });
   }, [apiUrl, resetSteps]);
+
+  // Expose startSync and isSyncing to parent via ref
+  useImperativeHandle(ref, () => ({
+    startSync,
+    isSyncing,
+  }), [startSync, isSyncing]);
 
   const getStatusIcon = (step: SyncStep) => {
     switch (step.status) {
@@ -194,4 +207,4 @@ export function SyncStatus({ apiUrl, apiKey }: SyncStatusProps) {
       </CardContent>
     </Card>
   );
-}
+});

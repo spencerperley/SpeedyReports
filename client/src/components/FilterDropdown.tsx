@@ -28,9 +28,19 @@ export function FilterDropdown({
   // Ensure options is always an array
   const safeOptions = Array.isArray(options) ? options : [];
 
+  // Filter options by search term
   const filteredOptions = safeOptions.filter(option =>
     option && typeof option === 'string' && option.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Sort options so selected items appear first
+  const sortedOptions = [...filteredOptions].sort((a, b) => {
+    const aSelected = selected.includes(a);
+    const bSelected = selected.includes(b);
+    if (aSelected && !bSelected) return -1;
+    if (!aSelected && bSelected) return 1;
+    return 0;
+  });
 
   const isAllSelected = selected.length === filteredOptions.length && filteredOptions.length > 0;
   const isPartialSelected = selected.length > 0 && selected.length < filteredOptions.length;
@@ -111,12 +121,12 @@ export function FilterDropdown({
             )}
           </div>
           <div className="max-h-64 overflow-auto p-1">
-            {filteredOptions.length === 0 ? (
+            {sortedOptions.length === 0 ? (
               <p className="text-center py-4 text-sm text-muted-foreground">
                 No options found
               </p>
             ) : (
-              filteredOptions.map((option) => (
+              sortedOptions.map((option) => (
                 <div key={option} className="flex items-center space-x-2 p-2 hover-elevate rounded-md">
                   <Checkbox
                     id={`${label}-${option}`}
@@ -124,7 +134,7 @@ export function FilterDropdown({
                     onCheckedChange={() => handleToggleOption(option)}
                     data-testid={`checkbox-${label.toLowerCase().replace(/\s+/g, '-')}-${option.toLowerCase().replace(/\s+/g, '-')}`}
                   />
-                  <label 
+                  <label
                     htmlFor={`${label}-${option}`}
                     className="text-sm cursor-pointer flex-1 text-foreground"
                   >

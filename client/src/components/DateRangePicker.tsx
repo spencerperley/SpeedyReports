@@ -40,14 +40,17 @@ export function DateRangePicker({
           <Label htmlFor="start-date" className="text-xs text-muted-foreground">
             From
           </Label>
-          <div className="relative">
-            <CalendarDays className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
+          <div
+            className="relative cursor-pointer"
+            onClick={() => document.getElementById('start-date')?.showPicker?.()}
+          >
+            <CalendarDays className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground pointer-events-none" />
             <Input
               id="start-date"
               type="date"
               value={startDate}
               onChange={handleStartDateChange}
-              className={`pl-10 ${isInvalidRange ? 'border-red-500' : ''}`}
+              className={`pl-10 cursor-pointer ${isInvalidRange ? 'border-red-500' : ''}`}
               data-testid="input-start-date"
             />
           </div>
@@ -56,14 +59,17 @@ export function DateRangePicker({
           <Label htmlFor="end-date" className="text-xs text-muted-foreground">
             To
           </Label>
-          <div className="relative">
-            <CalendarDays className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
+          <div
+            className="relative cursor-pointer"
+            onClick={() => document.getElementById('end-date')?.showPicker?.()}
+          >
+            <CalendarDays className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground pointer-events-none" />
             <Input
               id="end-date"
               type="date"
               value={endDate}
               onChange={handleEndDateChange}
-              className={`pl-10 ${isInvalidRange ? 'border-red-500' : ''}`}
+              className={`pl-10 cursor-pointer ${isInvalidRange ? 'border-red-500' : ''}`}
               data-testid="input-end-date"
             />
           </div>

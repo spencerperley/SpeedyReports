@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Moon, Sun, LogIn, Key } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ReportForm } from "./ReportForm";
 import { SavedReportsList } from "./SavedReportsList";
-import { SyncStatus } from "./SyncStatus";
+import { SyncStatus, SyncStatusHandle } from "./SyncStatus";
+import { MissingProductsSync } from "./MissingProductsSync";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 
@@ -16,6 +17,8 @@ interface ReportData {
   selectedSuppliers: string[];
   selectedCategories: string[];
   includeNonzeroOnly: boolean;
+  excludeContinuations: boolean;
+  fileType: "csv" | "xlsx";
 }
 
 interface SavedReport {
@@ -62,6 +65,7 @@ export function LightSpeedLayout() {
   const [apiKey, setApiKey] = useState<string>("");
   const [keyInput, setKeyInput] = useState("");
   const currentUserName = apiKey.split("|")[1] || "";
+  const syncStatusRef = useRef<SyncStatusHandle>(null);
 
   // Load API key from cookie on mount
   useEffect(() => {
@@ -170,11 +174,12 @@ export function LightSpeedLayout() {
         body: JSON.stringify(data),
       }).then((res) => res.blob()),
     onSuccess: (blob, data) => {
-      // Create download link for CSV
+      // Create download link for CSV or Excel
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `${data.reportName.replace(/[^a-zA-Z0-9]/g, "_")}.csv`;
+      const extension = data.fileType === "xlsx" ? "xlsx" : "csv";
+      link.download = `${data.reportName.replace(/[^a-zA-Z0-9]/g, "_")}.${extension}`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -222,6 +227,19 @@ export function LightSpeedLayout() {
   });
 
   const handleGenerateReport = async (data: ReportData) => {
+    console.log("Syncing data before generating report...");
+
+    // First, sync data using the SyncStatus component
+    try {
+      if (syncStatusRef.current) {
+        await syncStatusRef.current.startSync();
+        console.log("Sync completed, generating report...");
+      }
+    } catch (error) {
+      console.error("Sync error:", error);
+      // Continue with report generation even if sync fails
+    }
+
     console.log("Generating report with data:", data);
     generateReportMutation.mutate(data);
   };
@@ -248,6 +266,11 @@ export function LightSpeedLayout() {
     };
     setCurrentReportData(reportData);
     console.log("Report loaded:", report.reportName);
+  };
+
+  const handleClearReport = () => {
+    setCurrentReportData({});
+    console.log("Report form cleared");
   };
 
   // Show login screen if no API key
@@ -364,6 +387,7 @@ export function LightSpeedLayout() {
             outlets={outlets}
             onGenerateReport={handleGenerateReport}
             onSaveReport={handleSaveReport}
+            onClearReport={handleClearReport}
             initialData={currentReportData}
             isGenerating={generateReportMutation.isPending}
             isSaving={saveReportMutation.isPending}
@@ -373,7 +397,8 @@ export function LightSpeedLayout() {
         {/* Saved Reports Sidebar */}
         <aside className="w-80 border-l border-border">
           <div className="p-4 space-y-4">
-            <SyncStatus apiUrl={API_URL} apiKey={apiKey} />
+            <SyncStatus ref={syncStatusRef} apiUrl={API_URL} apiKey={apiKey} />
+            <MissingProductsSync apiUrl={API_URL} apiKey={apiKey} />
             <SavedReportsList
               reports={savedReports}
               currentUserName={currentUserName}
