@@ -86,56 +86,57 @@ export function MissingProductsSync({ apiUrl, apiKey }: MissingProductsSyncProps
   };
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
+    <Card className="border-border/50 bg-background/50">
+      <CardHeader className="pb-2 pt-3 px-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg font-semibold flex items-center gap-2">
-            {getStatusIcon()}
-            Sync Missing Products
+          <CardTitle className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
+            <Package className="h-3.5 w-3.5" />
+            Missing Products
           </CardTitle>
           <Button
             size="sm"
             onClick={startSync}
             disabled={isSyncing}
-            variant={status === "completed" ? "outline" : "default"}
+            variant={status === "completed" ? "outline" : "outline"}
+            className="h-7 text-xs px-2"
           >
             {isSyncing ? (
               <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Syncing...
+                <Loader2 className="h-3 w-3 mr-1.5 animate-spin" />
+                Syncing
               </>
             ) : status === "completed" ? (
               <>
-                <Check className="h-4 w-4 mr-2" />
+                <Check className="h-3 w-3 mr-1.5 text-green-600" />
                 Done
               </>
             ) : (
               <>
-                <Package className="h-4 w-4 mr-2" />
-                Start Sync
+                <Package className="h-3 w-3 mr-1.5" />
+                Sync
               </>
             )}
           </Button>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-3 pb-3">
         {error && (
-          <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md text-red-700 dark:text-red-400 text-sm">
+          <div className="mb-2 p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded text-red-700 dark:text-red-400 text-xs">
             {error}
           </div>
         )}
 
         {status !== "idle" && (
-          <div className="space-y-3">
-            <div className="flex items-center justify-between text-sm">
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-xs">
               <span className="text-muted-foreground">Progress</span>
-              <span className="tabular-nums font-medium">
+              <span className="tabular-nums">
                 {current.toLocaleString()} / {total.toLocaleString()}
               </span>
             </div>
-            <Progress value={progressPercent} className="h-2" />
+            <Progress value={progressPercent} className="h-1.5" />
             {message && (
-              <p className={`text-sm ${status === "completed" ? "text-green-600" : "text-muted-foreground"}`}>
+              <p className={`text-xs ${status === "completed" ? "text-green-600" : "text-muted-foreground"}`}>
                 {message}
               </p>
             )}
@@ -143,8 +144,8 @@ export function MissingProductsSync({ apiUrl, apiKey }: MissingProductsSyncProps
         )}
 
         {status === "idle" && (
-          <p className="text-sm text-muted-foreground">
-            Sync consignment products that were missed during previous syncs.
+          <p className="text-xs text-muted-foreground/80">
+            Sync products missed during previous syncs.
           </p>
         )}
       </CardContent>

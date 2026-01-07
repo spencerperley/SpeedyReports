@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Moon, Sun, LogIn, Key } from "lucide-react";
+import { Moon, Sun, LogIn, LogOut, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ReportForm } from "./ReportForm";
@@ -57,7 +57,7 @@ function deleteCookie(name: string) {
 const API_URL = import.meta.env.VITE_API_URL || "https://lightspeedordermanager.onrender.com";
 
 export function LightSpeedLayout() {
-  const [darkMode, setDarkMode] = useState(false);
+  const [darkMode, setDarkMode] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [currentReportData, setCurrentReportData] = useState<
@@ -135,9 +135,10 @@ export function LightSpeedLayout() {
     enabled: !!apiKey,
   });
 
-  // Dark mode toggle
+  // Dark mode toggle - default to dark if no preference saved
   useEffect(() => {
-    const isDark = localStorage.getItem("darkMode") === "true";
+    const saved = localStorage.getItem("darkMode");
+    const isDark = saved === null ? true : saved === "true";
     setDarkMode(isDark);
     document.documentElement.classList.toggle("dark", isDark);
   }, []);
@@ -277,12 +278,13 @@ export function LightSpeedLayout() {
   // Show login screen if no API key
   if (!apiKey) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="absolute top-4 right-4">
           <Button
             size="icon"
             variant="ghost"
             onClick={toggleDarkMode}
+            className="rounded-full"
             data-testid="button-theme-toggle"
           >
             {darkMode ? (
@@ -292,17 +294,19 @@ export function LightSpeedLayout() {
             )}
           </Button>
         </div>
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <div className="mx-auto mb-4 h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-              <Key className="h-6 w-6 text-primary" />
-            </div>
-            <CardTitle className="text-2xl">Light Speed Order Manager</CardTitle>
-            <p className="text-muted-foreground mt-2">
-              Enter your API key to continue
+        <Card className="w-full max-w-md shadow-xl border-2">
+          <CardHeader className="text-center pb-2">
+            <img
+              src="https://images.squarespace-cdn.com/content/v1/5cb9e195af4683da40b666a1/1563386393577-6L4GO7ED9WEYMMCLVSGI/UteTextLogo_PNG24_TRANS.png"
+              alt="Ute Mountaineer"
+              className="h-24 w-auto mx-auto mb-4 dark:invert dark:brightness-200"
+            />
+            <CardTitle className="text-2xl font-bold">Order Manager</CardTitle>
+            <p className="text-muted-foreground mt-1 text-sm">
+              Purchase Order Reports
             </p>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-4">
             <div className="space-y-4">
               <div>
                 <label
@@ -319,18 +323,18 @@ export function LightSpeedLayout() {
                   onKeyDown={(e) => {
                     if (e.key === "Enter") handleLogin();
                   }}
-                  className="w-full px-3 py-2 text-sm border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full px-4 py-3 text-sm border-2 border-border rounded-lg bg-background text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
                   placeholder="Enter your API key..."
                   data-testid="input-api-key"
                 />
               </div>
               <Button
-                className="w-full"
+                className="w-full h-11 text-base font-semibold"
                 onClick={handleLogin}
                 disabled={!keyInput.trim()}
                 data-testid="button-login"
               >
-                <LogIn className="h-4 w-4 mr-2" />
+                <LogIn className="h-5 w-5 mr-2" />
                 Login
               </Button>
             </div>
@@ -343,29 +347,45 @@ export function LightSpeedLayout() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b border-border">
-        <div className="flex items-center justify-between p-4">
-          <h1 className="text-2xl font-bold text-foreground">
-            Light Speed Order Manager
-          </h1>
+      <header className="border-b border-border bg-background/80 backdrop-blur-sm sticky top-0 z-50">
+        <div className="flex items-center justify-between px-6 py-2">
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">
-                Logged in as: <span className="font-medium text-foreground">{currentUserName || apiKey.substring(0, 20)}...</span>
-              </span>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={handleLogout}
-                data-testid="button-logout"
-              >
-                Logout
-              </Button>
+            <img
+              src="https://images.squarespace-cdn.com/content/v1/5cb9e195af4683da40b666a1/1563386393577-6L4GO7ED9WEYMMCLVSGI/UteTextLogo_PNG24_TRANS.png"
+              alt="Ute Mountaineer"
+              className="h-20 w-auto dark:invert dark:brightness-200"
+            />
+            <div className="h-6 w-px bg-border" />
+            <div>
+              <h1 className="text-lg font-semibold text-foreground tracking-tight">
+                Order Manager
+              </h1>
+              <p className="text-xs text-muted-foreground">Purchase Order Reports</p>
             </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/50">
+              <User className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-medium text-foreground">
+                {currentUserName || apiKey.substring(0, 12) + "..."}
+              </span>
+            </div>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={handleLogout}
+              className="text-muted-foreground hover:text-foreground"
+              data-testid="button-logout"
+            >
+              <LogOut className="h-4 w-4 mr-1.5" />
+              Logout
+            </Button>
+            <div className="w-px h-6 bg-border" />
             <Button
               size="icon"
               variant="ghost"
               onClick={toggleDarkMode}
+              className="rounded-full"
               data-testid="button-theme-toggle"
             >
               {darkMode ? (
@@ -381,7 +401,7 @@ export function LightSpeedLayout() {
       {/* Main Content */}
       <div className="flex">
         {/* Main Form Area */}
-        <main className="flex-1 p-8 space-y-6">
+        <main className="flex-1 p-8 space-y-8">
           <ReportForm
             suppliers={suppliers}
             categories={categories}
@@ -392,21 +412,25 @@ export function LightSpeedLayout() {
             initialData={currentReportData}
             isGenerating={generateReportMutation.isPending}
             isSaving={saveReportMutation.isPending}
+            className="shadow-lg border-2"
           />
-          <FeedbackForm apiUrl={API_URL} apiKey={apiKey} />
+          <FeedbackForm apiUrl={API_URL} apiKey={apiKey} className="max-w-2xl" />
         </main>
 
         {/* Saved Reports Sidebar */}
-        <aside className="w-80 border-l border-border">
+        <aside className="w-80 border-l border-border bg-muted/30">
           <div className="p-4 space-y-4">
-            <SyncStatus ref={syncStatusRef} apiUrl={API_URL} apiKey={apiKey} />
-            <MissingProductsSync apiUrl={API_URL} apiKey={apiKey} />
             <SavedReportsList
               reports={savedReports}
               currentUserName={currentUserName}
               onDeleteReport={handleDeleteReport}
               onLoadReport={handleLoadReport}
             />
+            <div className="pt-2 border-t border-border space-y-3">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide px-1">Data Sync</p>
+              <SyncStatus ref={syncStatusRef} apiUrl={API_URL} apiKey={apiKey} />
+              <MissingProductsSync apiUrl={API_URL} apiKey={apiKey} />
+            </div>
           </div>
         </aside>
       </div>

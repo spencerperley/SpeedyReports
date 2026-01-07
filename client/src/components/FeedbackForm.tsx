@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { MessageSquarePlus, Send } from "lucide-react";
+import { MessageSquarePlus, Send, CheckCircle2, Lightbulb } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -44,28 +44,36 @@ export function FeedbackForm({ apiUrl, apiKey, className = "" }: FeedbackFormPro
   };
 
   return (
-    <Card className={className}>
-      <CardHeader className="pb-2">
+    <Card className={`${className} border-border bg-card`}>
+      <CardHeader className="pb-3">
         <CardTitle className="text-lg font-semibold flex items-center gap-2">
-          <MessageSquarePlus className="h-5 w-5" />
-          Feedback
+          <div className="p-1.5 rounded-md bg-primary/10">
+            <Lightbulb className="h-4 w-4 text-primary" />
+          </div>
+          Share Your Feedback
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        <p className="text-xs text-muted-foreground mb-3">
-          Bug reports, feature requests, or just thoughts — give me your smallest nitpicks and loftiest aspirations.
-          One item per send please! The more detail, the better.
+      <CardContent className="space-y-3">
+        <p className="text-sm text-muted-foreground leading-relaxed">
+          Bug reports, feature requests, or just thoughts — give me your{" "}
+          <span className="italic text-foreground font-medium">smallest nitpicks</span> and{" "}
+          <span className="italic text-foreground font-medium">loftiest aspirations</span>.
         </p>
+        <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-400 text-xs font-medium">
+          <MessageSquarePlus className="h-3 w-3" />
+          One item per send
+        </div>
         <textarea
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          placeholder="What's on your mind?"
-          className="w-full h-24 px-3 py-2 text-sm border border-border rounded-md bg-background text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-primary"
+          placeholder="What's on your mind? The more detail, the better..."
+          className="w-full h-28 px-3 py-2.5 text-sm border-2 border-border rounded-lg bg-background text-foreground resize-none focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
           disabled={isSubmitting}
         />
-        <div className="flex items-center justify-between mt-2">
+        <div className="flex items-center justify-between">
           {submitted ? (
-            <span className="text-xs text-green-600 dark:text-green-400">
+            <span className="flex items-center gap-1.5 text-sm text-green-600 dark:text-green-400 font-medium">
+              <CheckCircle2 className="h-4 w-4" />
               Thanks for your feedback!
             </span>
           ) : (
@@ -74,12 +82,12 @@ export function FeedbackForm({ apiUrl, apiKey, className = "" }: FeedbackFormPro
             </span>
           )}
           <Button
-            size="sm"
             onClick={handleSubmit}
             disabled={!content.trim() || isSubmitting}
+            className="px-4"
           >
-            <Send className="h-4 w-4 mr-1" />
-            {isSubmitting ? "Sending..." : "Send"}
+            <Send className="h-4 w-4 mr-2" />
+            {isSubmitting ? "Sending..." : "Send Feedback"}
           </Button>
         </div>
       </CardContent>

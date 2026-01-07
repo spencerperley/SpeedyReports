@@ -153,52 +153,54 @@ export const SyncStatus = forwardRef<SyncStatusHandle, SyncStatusProps>(function
   };
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
+    <Card className="border-border/50 bg-background/50">
+      <CardHeader className="pb-2 pt-3 px-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg font-semibold flex items-center gap-2">
-            <RefreshCw className="h-5 w-5" />
-            Data Sync
+          <CardTitle className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
+            <RefreshCw className="h-3.5 w-3.5" />
+            Full Sync
           </CardTitle>
           <Button
             size="sm"
+            variant={isSyncing ? "default" : "outline"}
             onClick={startSync}
             disabled={isSyncing}
+            className="h-7 text-xs px-2"
             data-testid="button-sync-data"
           >
             {isSyncing ? (
               <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Syncing...
+                <Loader2 className="h-3 w-3 mr-1.5 animate-spin" />
+                Syncing
               </>
             ) : (
               <>
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Sync Now
+                <RefreshCw className="h-3 w-3 mr-1.5" />
+                Sync
               </>
             )}
           </Button>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-3 pb-3">
         {error && (
-          <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md text-red-700 dark:text-red-400 text-sm">
+          <div className="mb-3 p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded text-red-700 dark:text-red-400 text-xs">
             {error}
           </div>
         )}
-        <ul className="space-y-2">
+        <ul className="space-y-1">
           {steps.map((step) => (
             <li
               key={step.id}
-              className={`flex items-center justify-between py-1 ${getTextColor(step)}`}
+              className={`flex items-center justify-between py-0.5 text-xs ${getTextColor(step)}`}
             >
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
                 {getStatusIcon(step)}
-                <span className={step.status === "pending" ? "text-muted-foreground" : ""}>
+                <span className={step.status === "pending" ? "text-muted-foreground/60" : ""}>
                   {step.label}
                 </span>
               </div>
-              <span className="text-sm tabular-nums">
+              <span className="tabular-nums text-muted-foreground">
                 {getStatusText(step)}
               </span>
             </li>
