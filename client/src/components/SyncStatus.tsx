@@ -30,6 +30,7 @@ const SYNC_STEPS: { id: string; label: string }[] = [
   { id: "consignments", label: "Consignments" },
   { id: "consignment_products", label: "Consignment Products" },
   { id: "inventory", label: "Inventory" },
+  { id: "sales", label: "Sales" },
 ];
 
 export const SyncStatus = forwardRef<SyncStatusHandle, SyncStatusProps>(function SyncStatus({ apiUrl, apiKey }, ref) {

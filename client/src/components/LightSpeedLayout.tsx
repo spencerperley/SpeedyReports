@@ -296,11 +296,19 @@ export function LightSpeedLayout() {
         </div>
         <Card className="w-full max-w-md shadow-xl border-2">
           <CardHeader className="text-center pb-2">
-            <img
-              src="https://images.squarespace-cdn.com/content/v1/5cb9e195af4683da40b666a1/1563386393577-6L4GO7ED9WEYMMCLVSGI/UteTextLogo_PNG24_TRANS.png"
-              alt="Ute Mountaineer"
-              className="h-24 w-auto mx-auto mb-4 dark:invert dark:brightness-200"
-            />
+            <div className="flex items-center justify-center gap-4 mb-4">
+              <img
+                src="https://images.squarespace-cdn.com/content/v1/5cb9e195af4683da40b666a1/1563386393577-6L4GO7ED9WEYMMCLVSGI/UteTextLogo_PNG24_TRANS.png"
+                alt="Ute Mountaineer"
+                className="h-20 w-auto dark:invert dark:brightness-200"
+              />
+              <div className="h-12 w-px bg-border" />
+              <img
+                src="https://www.neptunemountaineering.com/cdn/shop/files/Neptune-logo-blue_NoBo_1200px.png"
+                alt="Neptune Mountaineering"
+                className="h-14 w-auto"
+              />
+            </div>
             <CardTitle className="text-2xl font-bold">Order Manager</CardTitle>
             <p className="text-muted-foreground mt-1 text-sm">
               Purchase Order Reports
@@ -354,6 +362,12 @@ export function LightSpeedLayout() {
               src="https://images.squarespace-cdn.com/content/v1/5cb9e195af4683da40b666a1/1563386393577-6L4GO7ED9WEYMMCLVSGI/UteTextLogo_PNG24_TRANS.png"
               alt="Ute Mountaineer"
               className="h-20 w-auto dark:invert dark:brightness-200"
+            />
+            <div className="h-12 w-px bg-border" />
+            <img
+              src="https://www.neptunemountaineering.com/cdn/shop/files/Neptune-logo-blue_NoBo_1200px.png"
+              alt="Neptune Mountaineering"
+              className="h-16 w-auto"
             />
             <div className="h-6 w-px bg-border" />
             <div>
