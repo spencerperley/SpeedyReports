@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Check, ChevronDown, Search } from "lucide-react";
+import Fuse from "fuse.js";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -28,10 +29,19 @@ export function FilterDropdown({
   // Ensure options is always an array
   const safeOptions = Array.isArray(options) ? options : [];
 
-  // Filter options by search term
-  const filteredOptions = safeOptions.filter(option =>
-    option && typeof option === 'string' && option.toLowerCase().includes(searchTerm.toLowerCase())
+  // Fuzzy search with Fuse.js
+  const fuse = useMemo(
+    () => new Fuse(safeOptions.filter(o => o && typeof o === 'string'), {
+      threshold: 0.4,
+      ignoreLocation: true,
+    }),
+    [safeOptions]
   );
+
+  const filteredOptions = useMemo(() => {
+    if (!searchTerm.trim()) return safeOptions.filter(o => o && typeof o === 'string');
+    return fuse.search(searchTerm).map(result => result.item);
+  }, [searchTerm, safeOptions, fuse]);
 
   // Sort options so selected items appear first
   const sortedOptions = [...filteredOptions].sort((a, b) => {
